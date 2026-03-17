@@ -1,0 +1,417 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Multilingual Sentiment Analysis</title>
+  <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@700;900&family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; font-family: 'Inter', sans-serif; }
+    
+    body {
+      min-height: 100vh;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      background: linear-gradient(135deg, #1a1a1a 0%, #000000 100%);
+      padding: 20px;
+    }
+
+    .container {
+      width: 90%;
+      max-width: 720px;
+      padding: 45px;
+      border-radius: 28px;
+      background: rgba(20, 20, 20, 0.95);
+      backdrop-filter: blur(10px);
+      border: 2px solid rgba(255, 215, 0, 0.2);
+      box-shadow: 0 20px 60px rgba(0, 0, 0, 0.5);
+      transition: transform 0.3s ease, box-shadow 0.3s ease;
+    }
+
+     .container:hover {
+      transform: translateY(-5px);
+      box-shadow: 0 25px 70px rgba(0, 0, 0, 0.6);
+    }
+
+    h1 {
+      text-align: center;
+      margin-bottom: 30px;
+      background: linear-gradient(135deg, #ffd700 0%, #ffed4e 100%);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
+      font-size: 36px;
+      font-weight: 900;
+      font-family: 'Playfair Display', serif;
+      letter-spacing: 1px;
+    }
+
+    .textarea-wrapper { 
+        position: relative;
+        margin-bottom: 25px;
+    }
+
+    textarea {
+      background: rgba(0, 0, 0, 0.6);
+      color: #ffffff;
+      width: 100%; 
+      height: 150px; 
+      padding: 20px; 
+      padding-bottom: 45px;
+      border-radius: 18px;
+      border: 2px solid rgba(255, 215, 0, 0.2); 
+      resize: none; 
+      font-size: 15px;
+      transition: border-color 0.3s ease, box-shadow 0.3s ease;
+    }
+
+    textarea::placeholder {
+      color: rgba(255, 255, 255, 0.4);
+    }
+
+    textarea:focus {
+      outline: none;
+      border-color: #ffd700;
+      box-shadow: 0 0 20px rgba(255, 215, 0, 0.2);
+    }
+
+    .char-counter {
+      position: absolute;
+      bottom: 14px;
+      right: 18px;
+      font-size: 11px;
+      color: #ffd700;
+      font-weight: 600;
+      letter-spacing: 0.5px;
+    }
+
+    .controls {
+        display: flex;
+        gap: 18px;
+        flex-wrap: wrap;
+    }
+
+    select, button {
+        padding: 16px 24px;
+        border-radius: 14px;
+        border: none;
+        font-size: 15px;
+        cursor: pointer;
+    }
+
+    select {
+        flex: 1;
+        background: rgba(0, 0, 0, 0.6);
+        color: #ffffff;
+        border: 2px solid rgba(255, 215, 0, 0.2);
+        transition: border-color 0.3s ease,
+    }
+
+    select:hover {
+      border-color: rgba(255, 215, 0, 0.4);
+    }
+
+    select:focus {
+      outline: none;
+      border-color: #ffd700;
+    }
+
+    select option {
+      background: #1a1a1a;
+      color: #ffffff;
+    }
+
+    button {
+      background: linear-gradient(135deg, #ffd700 0%, #daa520 100%);
+      color: #000000;
+      font-weight: 700;
+      letter-spacing: 1.5px;
+      text-transform: uppercase;
+      font-size: 14px;
+      box-shadow: 0 5px 20px rgba(255, 215, 0, 0.3);
+      transition: transform 0.2s ease, box-shadow 0.2s ease;
+      border: none;
+    }
+
+    button:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 8px 25px rgba(255, 215, 0, 0.4);
+    }
+
+    button:active {
+      transform: translateY(0);
+    }
+
+    button:disabled {
+      opacity: 0.5;
+      cursor: not-allowed;
+    }
+
+    .spinner {
+      display: inline-block;
+      width: 14px;
+      height: 14px;
+      border: 2px solid rgba(0, 0, 0, 0.3);
+      border-top-color: #000;
+      border-radius: 50%;
+      animation: spin 0.8s linear infinite;
+      margin-right: 8px;
+      vertical-align: middle;
+    }
+
+    @keyframes spin {
+      to { transform: rotate(360deg); }
+    }
+
+    .result {
+        margin-top: 35px;
+        padding: 30px;
+        border-radius: 18px;
+        text-align: center;
+        display: none;
+        box-shadow: 0 8px 25px rgba(0, 0, 0, 0.3);
+        animation: slideIn 0.4s ease-out;
+        border: 2px solid rgba(255, 215, 0, 0.3);
+    }
+
+     @keyframes slideIn {
+      from {
+        opacity: 0;
+        transform: translateY(20px);
+      }
+      to {
+        opacity: 1;
+        transform: translateY(0);
+      }
+    }
+
+     .positive { 
+      background: linear-gradient(135deg, rgba(16, 185, 129, 0.15), rgba(5, 150, 105, 0.25)); 
+      color: #6ee7b7;
+      border-left: 5px solid #10b981;
+    }
+    
+    .negative { 
+      background: linear-gradient(135deg, rgba(239, 68, 68, 0.15), rgba(220, 38, 38, 0.25)); 
+      color: #fca5a5;
+      border-left: 5px solid #ef4444;
+    }
+    
+    .neutral { 
+      background: linear-gradient(135deg, rgba(251, 191, 36, 0.15), rgba(245, 158, 11, 0.25)); 
+      color: #fcd34d;
+      border-left: 5px solid #fbbf24;
+    }
+
+     .result h3 {
+      font-size: 28px;
+      margin-bottom: 15px;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 2px;
+    }
+    
+    .result p {
+      line-height: 1.7;
+      margin: 10px 0;
+      color: rgba(255, 255, 255, 0.9);
+    }
+    
+    .result hr {
+      border: none;
+      height: 2px;
+      background: linear-gradient(90deg, transparent, rgba(255, 215, 0, 0.3), transparent);
+      border-radius: 2px;
+      margin: 18px 0;
+    }
+
+     .sentiment-emoji {
+      font-size: 64px;
+      margin-bottom: 15px;
+      display: inline-block;
+    }
+
+    .confidence-bar {
+        width: 100%;
+        height: 12px;
+        background: rgba(0, 0, 0, 0.4);
+        border-radius: 20px;
+        margin: 18px 0;
+        overflow: hidden;
+        border: 1px solid rgba(255, 215, 0, 0.2);
+    }
+
+    .confidence-fill {
+        height: 100%;
+        border-radius: 20px;
+        transition: width 1s ease-out;
+        background: linear-gradient(90deg, #ffd700, #ffed4e);
+        box-shadow: 0 0 10px rgba(255, 215, 0, 0.4);
+    }
+  </style>
+</head>
+
+<body>
+  <div class="container">
+    <h1>Multilingual Sentiment Analysis</h1>
+
+    <div class="textarea-wrapper">
+      <textarea id="inputText" placeholder="Enter your text in any supported language..." oninput="updateCharCount()"></textarea>
+      <div class="char-counter"><span id="charCount">0</span> characters</div>
+    </div>
+
+    <div class="controls">
+      <select id="language">
+        <option value="auto">🌐 Auto Detect</option>
+        <option value="en">English</option>
+        <option value="hi">Hindi</option>
+        <option value="ta">Tamil</option>
+        <option value="ml">Malayalam</option>
+        <option value="kn">Kannada</option>
+      </select>
+      <button onclick="analyzeSentiment()" id="analyzeBtn">
+        <span id="btnText">Analyze</span>
+      </button>
+      <button type="button" onclick="startVoiceInput()" id="voiceBtn">
+        🎤 Speak
+      </button>
+    </div>
+
+    <div id="result" class="result"></div>
+  </div>
+
+<script>
+function updateCharCount() {
+  const text = document.getElementById('inputText').value;
+  document.getElementById('charCount').textContent = text.length;
+}
+
+function getSentimentEmoji(sentiment) {
+  const emojis = {
+    positive: '😊',
+    negative: '😔',
+    neutral: '😐'
+    };
+  return emojis[sentiment] || '🤔';
+}
+
+function speakResult(text) {
+  const speech = new SpeechSynthesisUtterance(text);
+  window.speechSynthesis.speak(speech);
+}
+
+function startVoiceInput() {
+  const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+
+  if (!SpeechRecognition) {
+    alert("Use Google Chrome for voice support");
+    return;
+  }
+
+  const recognition = new SpeechRecognition();
+  const selectedLang = document.getElementById('language').value;
+
+  const languageMap = {
+    en: "en-US",
+    hi: "hi-IN",
+    ta: "ta-IN",
+    ml: "ml-IN",
+    kn: "kn-IN",
+    auto: "en-US"
+  };
+
+  recognition.lang = languageMap[selectedLang] || "en-US";
+  recognition.interimResults = false;
+  recognition.maxAlternatives = 1;
+
+  recognition.start();
+
+  const voiceBtn = document.getElementById("voiceBtn");
+  voiceBtn.textContent = "🎙️ Listening...";
+  voiceBtn.disabled = true;
+
+  recognition.onresult = function(event) {
+    const transcript = event.results[0][0].transcript;
+    document.getElementById("inputText").value = transcript;
+    updateCharCount();
+    // ❌ Removed auto analyze here
+  };
+
+  recognition.onend = function() {
+    voiceBtn.textContent = "🎤 Speak";
+    voiceBtn.disabled = false;
+  };
+
+  recognition.onerror = function(event) {
+    alert("Voice recognition error: " + event.error);
+  };
+}
+
+async function analyzeSentiment() {
+  const text = document.getElementById('inputText').value.trim();
+  const lang = document.getElementById('language').value;
+  const resultBox = document.getElementById('result');
+  //const analyzeBtn = document.getElementById('analyzeBtn');
+  const btnText = document.getElementById('btnText');//
+
+  if (!text) {
+    alert('Please enter some text');
+    return;
+  }
+
+// Disable button and show loading
+      analyzeBtn.disabled = true;
+      btnText.innerHTML = '<span class="spinner"></span>Analyzing...';
+      
+      resultBox.style.display = 'block';
+      resultBox.className = 'result';
+      resultBox.innerHTML = '<div style="padding: 20px; color: #ffd700;">🔍 Analyzing sentiment...</div>';
+
+    try{
+  const response = await fetch('http://127.0.0.1:5000/analyze', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ text: text, language: lang })
+  });
+
+  const data = await response.json();
+
+  const emoji = getSentimentEmoji(data.sentiment);
+
+  resultBox.className = `result ${data.sentiment}`;
+  resultBox.innerHTML = `
+    <div class="sentiment-emoji">${emoji}</div>
+    <h3>Sentiment: ${data.sentiment.toUpperCase()}</h3>
+    <div class="confidence-bar">
+      <div class="confidence-fill" style="width: ${data.confidence}%"></div>
+    </div>
+    <p><strong>Confidence:</strong> ${data.confidence}%</p>
+    <hr style="margin:12px 0">
+    <p><strong>Translated Text (English):</strong></p>
+    <p style="font-style: italic;">${data.translated_text}</p>
+  `;
+
+ } catch (error) {
+        resultBox.className = 'result';
+        resultBox.innerHTML = '<p style="color: #ffd700;">❌ Error connecting to backend</p>';
+      } finally {
+        // Re-enable button
+        analyzeBtn.disabled = false;
+        btnText.textContent = 'Analyze';
+      }
+    }
+    
+    // Allow Enter key to submit (with Shift+Enter for new line)
+    document.getElementById('inputText').addEventListener('keydown', function(e) {
+      if (e.key === 'Enter' && !e.shiftKey) {
+        e.preventDefault();
+        analyzeSentiment();
+      }
+    
+  speakResult(`The sentiment is ${data.sentiment} with ${data.confidence} percent confidence`);
+});
+
+</script>
+</body>
+</html>
