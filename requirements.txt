@@ -1,0 +1,5 @@
+flask
+flask_cors
+transformers
+deep_translator
+langdetect
