@@ -292,7 +292,7 @@ function getSentimentEmoji(sentiment) {
     positive: '😊',
     negative: '😔',
     neutral: '😐'
-    };
+  };
   return emojis[sentiment] || '🤔';
 }
 
@@ -322,9 +322,6 @@ function startVoiceInput() {
   };
 
   recognition.lang = languageMap[selectedLang] || "en-US";
-  recognition.interimResults = false;
-  recognition.maxAlternatives = 1;
-
   recognition.start();
 
   const voiceBtn = document.getElementById("voiceBtn");
@@ -335,7 +332,6 @@ function startVoiceInput() {
     const transcript = event.results[0][0].transcript;
     document.getElementById("inputText").value = transcript;
     updateCharCount();
-    // ❌ Removed auto analyze here
   };
 
   recognition.onend = function() {
@@ -344,7 +340,7 @@ function startVoiceInput() {
   };
 
   recognition.onerror = function(event) {
-    alert("Voice recognition error: " + event.error);
+    alert("Voice error: " + event.error);
   };
 }
 
@@ -352,66 +348,64 @@ async function analyzeSentiment() {
   const text = document.getElementById('inputText').value.trim();
   const lang = document.getElementById('language').value;
   const resultBox = document.getElementById('result');
-  //const analyzeBtn = document.getElementById('analyzeBtn');
-  const btnText = document.getElementById('btnText');//
+  const analyzeBtn = document.getElementById('analyzeBtn');
+  const btnText = document.getElementById('btnText');
 
   if (!text) {
     alert('Please enter some text');
     return;
   }
 
-// Disable button and show loading
-      analyzeBtn.disabled = true;
-      btnText.innerHTML = '<span class="spinner"></span>Analyzing...';
-      
-      resultBox.style.display = 'block';
-      resultBox.className = 'result';
-      resultBox.innerHTML = '<div style="padding: 20px; color: #ffd700;">🔍 Analyzing sentiment...</div>';
+  analyzeBtn.disabled = true;
+  btnText.innerHTML = '<span class="spinner"></span>Analyzing...';
 
-    try{
-  const response = await fetch('http://127.0.0.1:5000/analyze', {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ text: text, language: lang })
-  });
+  resultBox.style.display = 'block';
+  resultBox.className = 'result';
+  resultBox.innerHTML = '<div style="padding: 20px; color: #ffd700;">🔍 Analyzing sentiment...</div>';
 
-  const data = await response.json();
+  try {
+    // ✅ IMPORTANT: Use relative URL
+    const response = await fetch('/analyze', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ text: text, language: lang })
+    });
 
-  const emoji = getSentimentEmoji(data.sentiment);
+    const data = await response.json();
 
-  resultBox.className = `result ${data.sentiment}`;
-  resultBox.innerHTML = `
-    <div class="sentiment-emoji">${emoji}</div>
-    <h3>Sentiment: ${data.sentiment.toUpperCase()}</h3>
-    <div class="confidence-bar">
-      <div class="confidence-fill" style="width: ${data.confidence}%"></div>
-    </div>
-    <p><strong>Confidence:</strong> ${data.confidence}%</p>
-    <hr style="margin:12px 0">
-    <p><strong>Translated Text (English):</strong></p>
-    <p style="font-style: italic;">${data.translated_text}</p>
-  `;
+    const emoji = getSentimentEmoji(data.sentiment);
 
- } catch (error) {
-        resultBox.className = 'result';
-        resultBox.innerHTML = '<p style="color: #ffd700;">❌ Error connecting to backend</p>';
-      } finally {
-        // Re-enable button
-        analyzeBtn.disabled = false;
-        btnText.textContent = 'Analyze';
-      }
-    }
-    
-    // Allow Enter key to submit (with Shift+Enter for new line)
-    document.getElementById('inputText').addEventListener('keydown', function(e) {
-      if (e.key === 'Enter' && !e.shiftKey) {
-        e.preventDefault();
-        analyzeSentiment();
-      }
-    
-  speakResult(`The sentiment is ${data.sentiment} with ${data.confidence} percent confidence`);
+    resultBox.className = `result ${data.sentiment}`;
+    resultBox.innerHTML = `
+      <div class="sentiment-emoji">${emoji}</div>
+      <h3>Sentiment: ${data.sentiment.toUpperCase()}</h3>
+      <div class="confidence-bar">
+        <div class="confidence-fill" style="width: ${data.confidence}%"></div>
+      </div>
+      <p><strong>Confidence:</strong> ${data.confidence}%</p>
+      <hr>
+      <p><strong>Translated Text:</strong></p>
+      <p style="font-style: italic;">${data.translated_text}</p>
+    `;
+
+    // ✅ FIXED: Speak here
+    speakResult(`The sentiment is ${data.sentiment} with ${data.confidence} percent confidence`);
+
+  } catch (error) {
+    resultBox.innerHTML = '<p style="color: #ffd700;">❌ Error connecting to backend</p>';
+  } finally {
+    analyzeBtn.disabled = false;
+    btnText.textContent = 'Analyze';
+  }
+}
+
+// Enter key support
+document.getElementById('inputText').addEventListener('keydown', function(e) {
+  if (e.key === 'Enter' && !e.shiftKey) {
+    e.preventDefault();
+    analyzeSentiment();
+  }
 });
-
 </script>
 </body>
 </html>
